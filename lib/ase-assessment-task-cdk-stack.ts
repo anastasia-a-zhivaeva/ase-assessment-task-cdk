@@ -10,7 +10,7 @@ export class AseAssessmentTaskCdkStack extends cdk.Stack {
     const recommendation = new NodejsFunction(this, "recommendation", {
       entry: "./src/lambda.ts",
       timeout: cdk.Duration.minutes(1),
-      
+      runtime: cdk.aws_lambda.Runtime.NODEJS_22_X,
     })
 
     const recommendationUrl = recommendation.addFunctionUrl({

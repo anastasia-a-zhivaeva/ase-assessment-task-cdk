@@ -1,5 +1,5 @@
-import { RecommendationDto, RecommendationRequest } from "./models";
-import { RecommendationServiceFactory } from "./services";
+import { RecommendationRequest, RecommendationResponse } from "./models";
+import { RecommendationMapper, RecommendationServiceFactory } from "./services";
 import { supportedRecommendationServices } from "./supported-recommendation-services";
 
 /**
@@ -8,20 +8,23 @@ import { supportedRecommendationServices } from "./supported-recommendation-serv
  * (the functionality of notifying a user when new recommendations are available is also possible)
  */
 const recommendationServiceFactory = new RecommendationServiceFactory();
+const recommendationMapper = new RecommendationMapper();
 
-export async function getRecommendations(requestParams: RecommendationRequest): Promise<Array<RecommendationDto>> {
+export async function getRecommendations(requestParams: RecommendationRequest): Promise<RecommendationResponse> {
     const recommendationsArrays = await Promise.all(
         supportedRecommendationServices.map(async serviceInfo => {
             try {
-                return await recommendationServiceFactory
-                    .createRecommendationService(serviceInfo.name, serviceInfo)
-                    .getRecommendation(requestParams);
+                const service = recommendationServiceFactory.createRecommendationService(serviceInfo.name, serviceInfo);
+                const recommendations = await service.getRecommendation(requestParams);
+                return recommendationMapper.toDto(serviceInfo.name, recommendations);
             } catch(error) {
                 console.log(error);
                 return [];
             }
         })
     );
-    return recommendationsArrays.flat().sort((a, b) => a.priority < b.priority ? 1 : -1);
+    return {
+        recommendations: recommendationsArrays.flat().sort((a, b) => a.priority < b.priority ? 1 : -1)
+    };
 }
 

@@ -4,8 +4,10 @@ import Fastify from "fastify";
 import { routes } from "./modules/recommendation/routes";
 
 const server = Fastify();
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 server.register(routes);
-server.register(cors)
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
+server.register(cors);
 
 if (require.main === module) {
   // called directly i.e. "node server"

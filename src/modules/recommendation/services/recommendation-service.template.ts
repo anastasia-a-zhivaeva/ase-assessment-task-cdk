@@ -1,26 +1,26 @@
-import { RecommendationDto, RecommendationRequest } from "../models";
+import { RecommendationRequest } from "../models";
+import { BaseServiceConfig } from "../models/service-config.model";
 
 /**
  * RecommendationService provides a skeleton of the getRecommendation algorithm (Template Method Pattern)
  * Subclasses should override specific steps of the algorithm (abstract methods)
  */
-export abstract class RecommendationServiceTemplate<ServiceInfo, RequestParams, AuthParams, Recommendation> {
-  protected serviceInfo: ServiceInfo;
+export abstract class RecommendationServiceTemplate<ServiceConfig extends BaseServiceConfig, RequestParams, AuthParams, Recommendation> {
+  protected serviceInfo: ServiceConfig;
 
-  constructor(serviceInfo: ServiceInfo) {
+  constructor(serviceInfo: ServiceConfig) {
     this.serviceInfo = serviceInfo;
   }
 
   /**
-   * Return recommendations
+   * Return recommendations in service-specific format
    * @param requestParams 
-   * @returns Array of RecommendationDto
+   * @returns Array of service-specific recommendations
    */
-  public async getRecommendation(requestParams: RecommendationRequest): Promise<Array<RecommendationDto>> {
+  public async getRecommendation(requestParams: RecommendationRequest): Promise<Array<Recommendation>> {
     const authParams = await this.getAuthenticationParams();
     const request = await this.getRequestParams(requestParams, authParams);
-    const recommendation = await this.requestRecommendation(request);
-    return this.formatRecommendation(recommendation);
+    return this.requestRecommendation(request);
   }
 
   /**
@@ -39,9 +39,4 @@ export abstract class RecommendationServiceTemplate<ServiceInfo, RequestParams, 
    * Implements retry mechanism specific for the service (exponential-backoff, compliance with rate limiter)
    */
   protected abstract requestRecommendation(requestParams: RequestParams): Promise<Array<Recommendation>>;
-
-  /**
-   * Format recommendations to RecommendationDtos
-   */
-  protected abstract formatRecommendation(recommendation: Array<Recommendation>): Promise<Array<RecommendationDto>>;
 }
