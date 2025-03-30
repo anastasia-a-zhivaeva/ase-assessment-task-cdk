@@ -1,5 +1,4 @@
-import { RecommendationRequest } from "../models";
-import { BaseServiceConfig } from "../models/service-config.model";
+import { RecommendationRequest, BaseServiceConfig } from "../models";
 
 /**
  * RecommendationService provides a skeleton of the getRecommendation algorithm (Template Method Pattern)

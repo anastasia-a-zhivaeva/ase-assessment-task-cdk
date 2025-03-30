@@ -1,30 +1,30 @@
+import { RecommendationDtoMapper, service1Mapper, service2Mapper } from "./mappers";
 import { RecommendationRequest, RecommendationResponse } from "./models";
-import { RecommendationMapper, RecommendationServiceFactory } from "./services";
-import { supportedRecommendationServices } from "./supported-recommendation-services";
+import { RecommendationAggregatorService, RecommendationServiceFactory } from "./services";
 
 /**
  * In real implementation, recommendations are retrieved by workers that poll tasks from message queue,
  * update cache with recent recommendations and store them in the database
- * (the functionality of notifying a user when new recommendations are available is also possible)
+ * (the functionality of notifying a user when new recommendations is also possible)
  */
 const recommendationServiceFactory = new RecommendationServiceFactory();
-const recommendationMapper = new RecommendationMapper();
+const recommendationAggregator = new RecommendationAggregatorService(recommendationServiceFactory);
+const recommendationDtoMapper = new RecommendationDtoMapper();
+
+// Register service mappers
+recommendationDtoMapper.registerMapper("service1", service1Mapper);
+recommendationDtoMapper.registerMapper("service2", service2Mapper);
 
 export async function getRecommendations(requestParams: RecommendationRequest): Promise<RecommendationResponse> {
-    const recommendationsArrays = await Promise.all(
-        supportedRecommendationServices.map(async serviceInfo => {
-            try {
-                const service = recommendationServiceFactory.createRecommendationService(serviceInfo.name, serviceInfo);
-                const recommendations = await service.getRecommendation(requestParams);
-                return recommendationMapper.toDto(serviceInfo.name, recommendations);
-            } catch(error) {
-                console.log(error);
-                return [];
-            }
-        })
+    const serviceRecommendations = await recommendationAggregator.getRecommendations(requestParams);
+    
+    const mappedRecommendations = serviceRecommendations.flatMap(serviceRecommendation => 
+        recommendationDtoMapper.toDto(serviceRecommendation.serviceName, serviceRecommendation.recommendations)
     );
+
+    const sortedRecommendations = [...mappedRecommendations].sort((a, b) => a.priority < b.priority ? 1 : -1);
     return {
-        recommendations: recommendationsArrays.flat().sort((a, b) => a.priority < b.priority ? 1 : -1)
+        recommendations: sortedRecommendations
     };
 }
 
