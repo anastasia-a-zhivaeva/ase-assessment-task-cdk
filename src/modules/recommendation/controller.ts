@@ -17,14 +17,10 @@ recommendationDtoMapper.registerMapper("service2", service2Mapper);
 
 export async function getRecommendations(requestParams: RecommendationRequest): Promise<RecommendationResponse> {
     const serviceRecommendations = await recommendationAggregator.getRecommendations(requestParams);
+    const recommendations = recommendationDtoMapper.toDtos(serviceRecommendations);
     
-    const mappedRecommendations = serviceRecommendations.flatMap(serviceRecommendation => 
-        recommendationDtoMapper.toDto(serviceRecommendation.serviceName, serviceRecommendation.recommendations)
-    );
-
-    const sortedRecommendations = [...mappedRecommendations].sort((a, b) => a.priority < b.priority ? 1 : -1);
     return {
-        recommendations: sortedRecommendations
+        recommendations
     };
 }
 

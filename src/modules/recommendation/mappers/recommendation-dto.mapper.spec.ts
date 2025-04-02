@@ -1,3 +1,4 @@
+import { ServiceRecommendations } from "../models";
 import { RecommendationDtoMapper } from "./recommendation-dto.mapper";
 
 describe('RecommendationDtoMapper', () => {
@@ -155,6 +156,143 @@ describe('RecommendationDtoMapper', () => {
 
             expect(result).toEqual([
                 { priority: 1000, title: 'Overridden mapping' }
+            ]);
+        });
+    });
+
+    describe('toDtos', () => {
+        interface TestService1Recommendation {
+            score: number;
+            message: string;
+        }
+
+        interface TestService2Recommendation {
+            importance: number;
+            heading: string;
+            content: string;
+        }
+
+        const testService1Mapper = (recommendations: Array<TestService1Recommendation>): Array<{ priority: number; title: string }> => 
+            recommendations.map(rec => ({
+                priority: rec.score * 1000,
+                title: rec.message
+            }));
+
+        const testService2Mapper = (recommendations: Array<TestService2Recommendation>): Array<{ priority: number; title: string; description: string }> => 
+            recommendations.map(rec => ({
+                priority: rec.importance,
+                title: rec.heading,
+                description: rec.content
+            }));
+
+        beforeEach(() => {
+            mapper.registerMapper<TestService1Recommendation>('test-service1', testService1Mapper);
+            mapper.registerMapper<TestService2Recommendation>('test-service2', testService2Mapper);
+        });
+
+        it('should map and sort recommendations from multiple services', () => {
+            const serviceRecommendations: ServiceRecommendations[] = [
+                {
+                    serviceName: 'test-service1',
+                    recommendations: [
+                        { score: 0.8, message: 'Test recommendation 1' },
+                        { score: 0.5, message: 'Test recommendation 2' }
+                    ]
+                },
+                {
+                    serviceName: 'test-service2',
+                    recommendations: [
+                        { importance: 900, heading: 'Test title 1', content: 'Test content 1' },
+                        { importance: 700, heading: 'Test title 2', content: 'Test content 2' }
+                    ]
+                }
+            ];
+
+            const result = mapper.toDtos(serviceRecommendations);
+
+            expect(result).toEqual([
+                { priority: 900, title: 'Test title 1', description: 'Test content 1' },
+                { priority: 800, title: 'Test recommendation 1' },
+                { priority: 700, title: 'Test title 2', description: 'Test content 2' },
+                { priority: 500, title: 'Test recommendation 2' }
+            ]);
+        });
+
+        it('should handle empty recommendations from services', () => {
+            const serviceRecommendations: ServiceRecommendations[] = [
+                {
+                    serviceName: 'test-service1',
+                    recommendations: []
+                },
+                {
+                    serviceName: 'test-service2',
+                    recommendations: []
+                }
+            ];
+
+            const result = mapper.toDtos(serviceRecommendations);
+
+            expect(result).toEqual([]);
+        });
+
+        it('should handle unknown service gracefully', () => {
+            const serviceRecommendations: ServiceRecommendations[] = [
+                {
+                    serviceName: 'unknown-service',
+                    recommendations: [
+                        { score: 0.8, message: 'Test recommendation' }
+                    ]
+                }
+            ];
+
+            const result = mapper.toDtos(serviceRecommendations);
+
+            expect(result).toEqual([]);
+        });
+
+        it('should handle invalid recommendations gracefully', () => {
+            const serviceRecommendations: ServiceRecommendations[] = [
+                {
+                    serviceName: 'test-service1',
+                    recommendations: [] as unknown[]
+                },
+                {
+                    serviceName: 'test-service2',
+                    recommendations: [] as unknown[]
+                }
+            ];
+
+            const result = mapper.toDtos(serviceRecommendations);
+
+            expect(result).toEqual([]);
+        });
+
+        it('should maintain stable sort order for recommendations with same priority', () => {
+            const serviceRecommendations: ServiceRecommendations[] = [
+                {
+                    serviceName: 'test-service1',
+                    recommendations: [
+                        { score: 0.5, message: 'Test recommendation 1' },
+                        { score: 0.5, message: 'Test recommendation 2' }
+                    ]
+                },
+                {
+                    serviceName: 'test-service2',
+                    recommendations: [
+                        { importance: 500, heading: 'Test title 1', content: 'Test content 1' },
+                        { importance: 500, heading: 'Test title 2', content: 'Test content 2' }
+                    ]
+                }
+            ];
+
+            const result = mapper.toDtos(serviceRecommendations);
+
+            // The order should be preserved as in the input arrays
+            expect(result).toEqual([
+                { priority: 500, title: 'Test recommendation 1' },
+                { priority: 500, title: 'Test recommendation 2' },
+                { priority: 500, title: 'Test title 1', description: 'Test content 1' },
+                { priority: 500, title: 'Test title 2', description: 'Test content 2' }
             ]);
         });
     });

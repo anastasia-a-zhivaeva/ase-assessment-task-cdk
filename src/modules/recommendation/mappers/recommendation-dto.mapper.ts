@@ -1,4 +1,4 @@
-import { RecommendationDto } from "../models";
+import { RecommendationDto, ServiceRecommendations } from "../models";
 
 type ServiceMapper<T> = (recommendations: Array<T>) => Array<RecommendationDto>;
 
@@ -23,6 +23,19 @@ export class RecommendationDtoMapper {
         }
 
         return mapper(recommendations);
+    }
+
+    /**
+     * Maps and sorts recommendations from multiple services
+     * @param serviceRecommendations Array of recommendations from different services
+     * @returns Sorted array of recommendation DTOs
+     */
+    public toDtos(serviceRecommendations: ServiceRecommendations[]): RecommendationDto[] {
+        const mappedRecommendations = serviceRecommendations.flatMap(serviceRecommendation => 
+            this.toDto(serviceRecommendation.serviceName, serviceRecommendation.recommendations)
+        );
+
+        return [...mappedRecommendations].sort((a, b) => a.priority < b.priority ? 1 : -1);
     }
 
     /**
