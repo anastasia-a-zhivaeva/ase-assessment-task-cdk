@@ -1,10 +1,13 @@
 import { FastifyInstance } from "fastify";
-
-import { getRecommendations } from "./controller";
-import { RecommendationRequest } from "./models";
+import { RecommendationRequest, RecommendationResponse } from "./models";
 
 export function routes(fastify: FastifyInstance): void {
-    fastify.post<{ Body: RecommendationRequest }>("/recommendation", async (request) => 
-       getRecommendations(request.body)
-    );
+    fastify.post<{ Body: RecommendationRequest }>("/recommendation", async (request) => {
+        const serviceRecommendations = await fastify.recommendationAggregator.getRecommendations(request.body);
+        const recommendations = fastify.recommendationDtoMapper.toDtos(serviceRecommendations);
+        
+        return <RecommendationResponse>{
+            recommendations
+        };
+    });
 }

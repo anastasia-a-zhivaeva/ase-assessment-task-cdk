@@ -2,8 +2,11 @@ import cors from "@fastify/cors";
 import Fastify from "fastify";
 
 import { routes } from "./modules/recommendation/routes";
+import recommendationPlugin from "./modules/recommendation/services/recommendation-service.decorator";
 
 const server = Fastify();
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
+server.register(recommendationPlugin);
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 server.register(routes);
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
